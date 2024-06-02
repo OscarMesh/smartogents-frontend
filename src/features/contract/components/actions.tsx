@@ -36,13 +36,19 @@ export const Actions = ({
   return (
     <>
       <Card className="grid grid-cols-1 md:grid-cols-3 gap-y-3 w-full p-6 gap-x-3 glassmorphism">
-        <Button variant="outline" onClick={handleOverview}>
+        <Button
+          variant={isOverview ? "default" : "outline"}
+          onClick={handleOverview}
+        >
           Generate Overview
         </Button>
-        <Button variant="outline" onClick={handleScript}>
+        <Button
+          variant={isScript ? "default" : "outline"}
+          onClick={handleScript}
+        >
           Generate Script
         </Button>
-        <Button variant="outline" onClick={handleDocs}>
+        <Button variant={isDocs ? "default" : "outline"} onClick={handleDocs}>
           Generate Docs
         </Button>
       </Card>

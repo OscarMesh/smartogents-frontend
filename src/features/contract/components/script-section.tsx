@@ -1,14 +1,23 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ContractCardProps } from "@/features/contracts/components/contract-card";
 import {
   useContractWrite,
   useContract,
+  useContractRead,
   useAddress,
   useMetamask,
 } from "@thirdweb-dev/react";
-import { Contract, ethers, Wallet } from "ethers";
-import ABI from "@/constants/SmartoGentScriptGenerator.json";
+import ABI from "@/constants/SmartoGentOverview.json";
+import { ethers } from "ethers";
+import MarkdownRenderer from "@/components/ui/markdown-renderer";
+import { Loader2 } from "lucide-react";
+
+interface Message {
+  role: string;
+  content: string;
+}
 
 export const ScriptSection = ({
   address,
@@ -18,23 +27,44 @@ export const ScriptSection = ({
   const connectWithMetamask = useMetamask();
   const userAddress = useAddress();
   const message =
-    "enerate script for interacting with the associated smart contract in python and js";
+    "Generate JavaScript scripts to interact with the following smart contract based on its ABI. Include examples for calling functions, sending transactions, and listening to events.";
   const { data: contract } = useContract(
-    "0x87D3440372293aCf9149552546F7141AAe05Be91",
+    "0xB52329A11333462D192110357Be2da470B79B13e",
     ABI
   );
   const {
     mutateAsync: generateScript,
-    isLoading,
-    error,
-  } = useContractWrite(contract, "initiateScripGenerator");
+    isLoading: isGenerating,
+    error: generateError,
+  } = useContractWrite(contract, "initiateRequest");
 
-  const getChatId = (receipt: any, contract: any) => {
+  const [chatId, setChatId] = useState<number | undefined>(undefined);
+
+  const {
+    data: messageContents,
+    isLoading: isLoadingContents,
+    error: contentsError,
+  } = useContractRead(contract, "getMessageHistoryContents", [
+    chatId !== undefined ? [chatId] : undefined,
+  ]);
+
+  const {
+    data: messageRoles,
+    isLoading: isLoadingRoles,
+    error: rolesError,
+  } = useContractRead(contract, "getMessageHistoryRoles", [
+    chatId !== undefined ? [chatId] : undefined,
+  ]);
+
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const getChatId = (receipt: any, iface: ethers.utils.Interface) => {
     let chatId;
     for (const log of receipt.logs) {
       try {
-        const parsedLog = contract.interface.parseLog(log);
-        if (parsedLog && parsedLog.name === "ChatCreated") {
+        const parsedLog = iface.parseLog(log);
+        console.log("Parsed Log:", parsedLog);
+        if (parsedLog && parsedLog.name === "RequestCreated") {
           chatId = ethers.BigNumber.from(parsedLog.args[1]).toNumber();
         }
       } catch (error) {
@@ -45,6 +75,19 @@ export const ScriptSection = ({
     return chatId;
   };
 
+  useEffect(() => {
+    if (messageContents && messageRoles) {
+      const fetchedMessages: Message[] = messageContents.map(
+        (content: string, index: number) => ({
+          role: messageRoles[index],
+          content,
+        })
+      );
+      setMessages(fetchedMessages);
+      console.log(fetchedMessages);
+    }
+  }, [messageContents, messageRoles]);
+
   const handleGenerate = async () => {
     if (!userAddress) {
       await connectWithMetamask();
@@ -52,17 +95,17 @@ export const ScriptSection = ({
     await generateScript({
       args: [message, address],
     }).then((res: any) => {
-      console.log(res.receipt.logs);
+      console.log("Transaction receipt logs:", res.receipt.logs);
       const receipt = res.receipt;
+      const iface = new ethers.utils.Interface(ABI);
+      const chatId = getChatId(receipt, iface);
+      console.log("Generated chat ID:", chatId);
 
-      const chatId = getChatId(
-        receipt,
-        "0x87D3440372293aCf9149552546F7141AAe05Be91"
-      );
-      console.log(chatId);
+      if (chatId !== undefined) {
+        setChatId(chatId);
+      }
     });
   };
-
   return (
     <Card className="glassmorphism mt-3 w-full">
       <CardHeader>
@@ -73,12 +116,29 @@ export const ScriptSection = ({
           <Button
             className="blue_gradient"
             onClick={handleGenerate}
-            disabled={isLoading}
+            disabled={isGenerating}
           >
             Generate
           </Button>
         </div>
       </CardHeader>
+
+      <CardContent>
+        {isGenerating && messages.length === 0 ? (
+          <div className="flex w-full flex-col items-center justify-center">
+            <Loader2 className="w-7 h-7 animate-spin" />
+            <p>Loading Content...</p>
+          </div>
+        ) : (
+          messages.length !== 0 &&
+          messages.map(
+            (message, index) =>
+              message.role === "assistant" && (
+                <MarkdownRenderer content={message.content} key={index} />
+              )
+          )
+        )}
+      </CardContent>
     </Card>
   );
 };
