@@ -6,7 +6,6 @@ import { CheckCheck, Copy, Loader2 } from "lucide-react";
 import ABI from "@/constants/ContractABIRegistry.json";
 import { Actions } from "@/features/contract/components/actions";
 import { useContractRead, useContract } from "@thirdweb-dev/react";
-import { Card } from "@/components/ui/card";
 
 const Contract = () => {
   const { address } = useParams();

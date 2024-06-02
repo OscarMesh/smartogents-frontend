@@ -4,7 +4,6 @@ import { ContractCardProps } from "@/features/contracts/components/contract-card
 import {
   useContractWrite,
   useContract,
-  Web3Button,
   useAddress,
   useMetamask,
 } from "@thirdweb-dev/react";

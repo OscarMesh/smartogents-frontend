@@ -6,12 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { CheckCheck, Copy, Link2 } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export type ContractCardProps = {
-  address: string;
+  address: any;
   contractName: string;
   ipfsHash: string;
 };

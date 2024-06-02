@@ -4,10 +4,10 @@ import { ContractCardProps } from "@/features/contracts/components/contract-card
 import {
   useContractWrite,
   useContract,
-  Web3Button,
   useAddress,
   useMetamask,
 } from "@thirdweb-dev/react";
+import { Contract, ethers, Wallet } from "ethers";
 import ABI from "@/constants/SmartoGentScriptGenerator.json";
 
 export const ScriptSection = ({
@@ -29,12 +29,37 @@ export const ScriptSection = ({
     error,
   } = useContractWrite(contract, "initiateScripGenerator");
 
+  const getChatId = (receipt: any, contract: any) => {
+    let chatId;
+    for (const log of receipt.logs) {
+      try {
+        const parsedLog = contract.interface.parseLog(log);
+        if (parsedLog && parsedLog.name === "ChatCreated") {
+          chatId = ethers.BigNumber.from(parsedLog.args[1]).toNumber();
+        }
+      } catch (error) {
+        console.log("Could not parse log:", log);
+        console.error("Parsing error:", error);
+      }
+    }
+    return chatId;
+  };
+
   const handleGenerate = async () => {
     if (!userAddress) {
       await connectWithMetamask();
     }
-    await generateScript({ args: [message, address] }).then((res) => {
-      console.log(res);
+    await generateScript({
+      args: [message, address],
+    }).then((res: any) => {
+      console.log(res.receipt.logs);
+      const receipt = res.receipt;
+
+      const chatId = getChatId(
+        receipt,
+        "0x87D3440372293aCf9149552546F7141AAe05Be91"
+      );
+      console.log(chatId);
     });
   };
 
