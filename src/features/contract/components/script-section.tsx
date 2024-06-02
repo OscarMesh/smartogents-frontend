@@ -124,7 +124,7 @@ export const ScriptSection = ({
       </CardHeader>
 
       <CardContent>
-        {isGenerating && messages.length === 0 ? (
+        {isGenerating || isLoadingContents ? (
           <div className="flex w-full flex-col items-center justify-center">
             <Loader2 className="w-7 h-7 animate-spin" />
             <p>Loading Content...</p>
